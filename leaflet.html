@@ -1,126 +1,113 @@
 <!DOCTYPE html>
-        <html lang="en">
-          <head>
-            <meta charset="utf-8">
-            <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
-            <title>mapa.tif</title>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>mapa.tif</title>
 
-            <!-- Leaflet -->
-            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-            <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <!-- Leaflet -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 
-            <style>
-                body { margin:0; padding:0; }
-                body, table, tr, td, th, div, h1, h2, input { font-family: "Calibri", "Trebuchet MS", "Ubuntu", Serif; font-size: 11pt; }
-                #map { position:absolute; top:0; bottom:0; width:100%; } /* full size */
-                .ctl {
-                    padding: 2px 10px 2px 10px;
-                    background: white;
-                    background: rgba(255,255,255,0.9);
-                    box-shadow: 0 0 15px rgba(0,0,0,0.2);
-                    border-radius: 5px;
-                    text-align: right;
-                }
-                .title {
-                    font-size: 18pt;
-                    font-weight: bold;
-                }
-                .src {
-                    font-size: 10pt;
-                }
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body,
+      table,
+      tr,
+      td,
+      th,
+      div,
+      h1,
+      h2,
+      input {
+        font-family: "Calibri", "Trebuchet MS", "Ubuntu", Serif;
+        font-size: 11pt;
+      }
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      } /* full size */
+      .ctl {
+        padding: 2px 10px 2px 10px;
+        background: white;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
+        text-align: right;
+      }
+      .title {
+        font-size: 18pt;
+        font-weight: bold;
+      }
+      .src {
+        font-size: 10pt;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
 
-            </style>
+    <script>
+      // Map
+      var map = L.map("map", {
+        center: [-0.10609977565339714, 0.1730649310620464],
+        zoom: 13,
+        minZoom: 11,
+        maxZoom: 17,
+      });
 
-        </head>
-        <body>
+      var tilesource_layer = L.tileLayer("./tiles/{z}/{x}/{y}.png", {
+        tms: 1,
+        attribution: "ApexStudio",
+        minZoom: 11,
+        maxZoom: 17,
+      }).addTo(map);
 
-        <div id="map"></div>
+      var geojsonLayer = L.geoJSON(null, {
+        style: function (feature) {
+          return {
+            color: "blue",
+            weight: 0.9,
+            fillColor: "blue",
+            fillOpacity: 0.3,
+          };
+        },
+        onEachFeature: function (feature, layer) {
+          layer.on("click", function (e) {
+            // Mostrar la propiedad "name" cuando se hace clic en un elemento
+            alert("Name: " + feature.properties.name);
+          });
+        },
+      }).addTo(map);
 
-        <script>
-        /* **** Leaflet **** */
-
-        // Base layers
-        //  .. OpenStreetMap
-        var osm = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors', minZoom: 11, maxZoom: 17});
-
-        //  .. CartoDB Positron
-        var cartodb = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>', minZoom: 11, maxZoom: 17});
-
-        //  .. OSM Toner
-        var toner = L.tileLayer('http://{s}.tile.stamen.com/toner/{z}/{x}/{y}.png', {attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://www.openstreetmap.org/copyright">ODbL</a>.', minZoom: 11, maxZoom: 17});
-
-        //  .. White background
-        var white = L.tileLayer("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAAA1BMVEX///+nxBvIAAAAH0lEQVQYGe3BAQ0AAADCIPunfg43YAAAAAAAAAAA5wIhAAAB9aK9BAAAAABJRU5ErkJggg==", {minZoom: 11, maxZoom: 17});
-
-        // Overlay layers (TMS)
-        var lyr = L.tileLayer('./{z}/{x}/{y}.png', {tms: 1, opacity: 0.7, attribution: "", minZoom: 11, maxZoom: 17});
-
-        // Map
-        var map = L.map('map', {
-            center: [-0.09279131502241474, 0.13131572823259163],
-            zoom: 17,
-            minZoom: 11,
-            maxZoom: 17,
-            layers: [osm]
+      // Cargar datos GeoJSON
+      fetch("./warehouse_test.geojson")
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function (data) {
+          geojsonLayer.addData(data);
         });
 
-        var basemaps = {"OpenStreetMap": osm, "CartoDB Positron": cartodb, "Stamen Toner": toner, "Without background": white}
-        var overlaymaps = {"Layer": lyr}
+      // Add base layers
+      L.control.layers(basemaps, overlaymaps, { collapsed: false }).addTo(map);
 
-        // Title
-        var title = L.control();
-        title.onAdd = function(map) {
-            this._div = L.DomUtil.create('div', 'ctl title');
-            this.update();
-            return this._div;
-        };
-        title.update = function(props) {
-            this._div.innerHTML = "mapa.tif";
-        };
-        title.addTo(map);
-
-        // Note
-        var src = 'Generated by <a href="https://gdal.org/programs/gdal2tiles.html">GDAL2Tiles</a>, Copyright &copy; 2008 <a href="http://www.klokan.cz/">Klokan Petr Pridal</a>,  <a href="https://gdal.org">GDAL</a> &amp; <a href="http://www.osgeo.org/">OSGeo</a> <a href="http://code.google.com/soc/">GSoC</a>';
-        var title = L.control({position: 'bottomleft'});
-        title.onAdd = function(map) {
-            this._div = L.DomUtil.create('div', 'ctl src');
-            this.update();
-            return this._div;
-        };
-        title.update = function(props) {
-            this._div.innerHTML = src;
-        };
-        title.addTo(map);
-
-        var geojsonLayer = L.geoJSON(null, {
-    style: function(feature) {
-        return {
-            color: 'blue',
-            fillColor: 'blue',
-            fillOpacity: 0.5
-        };
-    }
-}).addTo(map);
-
-// Cargar datos GeoJSON
-fetch('./warehouse_test.geojson')
-    .then(function(response) {
-        return response.json();
-    })
-    .then(function(data) {
-        geojsonLayer.addData(data);
-    });
-
-
-        // Add base layers
-        L.control.layers(basemaps, overlaymaps, {collapsed: false}).addTo(map);
-
-        // Fit to overlay bounds (SW and NE points with (lat, lon))
-        map.fitBounds([[-0.18558263004482947, 0.26263145646518327], [0.0, 0.0]]);
-
-        </script>
-
-        </body>
-        </html>
-
-        
+      // Fit to overlay bounds (SW and NE points with (lat, lon))
+      map.fitBounds([
+        [-0.21219955130679427, 0.3461298621240928],
+        [0.0, 0.0],
+      ]);
+    </script>
+  </body>
+</html>

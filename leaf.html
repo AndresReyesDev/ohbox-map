@@ -32,10 +32,12 @@
   <body>
     <div id="map"></div>
     <script>
-      var map = L.map("map", { attributionControl: false }).setView(
-        [-0.0927913, 0.131316],
-        13
-      );
+      var map = L.map('map', {
+            center: [-0.09279131502241474, 0.13131572823259163],
+            zoom: 17,
+            minZoom: 11,
+            maxZoom: 17,
+        });
       L.control.attribution({ prefix: false }).addTo(map);
       var tilesource_layer = L.tileLayer("./tiles/{z}/{x}/{y}.png", {
         minZoom: 12,
@@ -61,13 +63,31 @@
       }).addTo(map);
 
       // Cargar datos GeoJSON
-      fetch("./warehouse_test.geojson")
-        .then(function (response) {
-          return response.json();
-        })
-        .then(function (data) {
-          geojsonLayer.addData(data);
-        });
+      var geojsonLayer = L.geoJSON(null, {
+    style: function(feature) {
+        return {
+            color: 'blue',
+            fillColor: 'blue',
+            fillOpacity: 0.5
+        };
+    }
+}).addTo(map);
+
+// Cargar datos GeoJSON
+fetch('./warehouse_test.geojson')
+    .then(function(response) {
+        return response.json();
+    })
+    .then(function(data) {
+        geojsonLayer.addData(data);
+    });
+
+
+        // Add base layers
+        L.control.layers(basemaps, overlaymaps, {collapsed: false}).addTo(map);
+
+        // Fit to overlay bounds (SW and NE points with (lat, lon))
+        map.fitBounds([[-0.18558263004482947, 0.26263145646518327], [0.0, 0.0]]);
     </script>
   </body>
 </html>
