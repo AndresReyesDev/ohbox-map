@@ -1,93 +1,83 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <title>Leaflet preview</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
-      integrity="sha384-o/2yZuJZWGJ4s/adjxVW71R+EO/LyCwdQfP5UWSgX/w87iiTXuvDZaejd3TsN7mf"
-      crossorigin=""
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+            integrity="sha384-o/2yZuJZWGJ4s/adjxVW71R+EO/LyCwdQfP5UWSgX/w87iiTXuvDZaejd3TsN7mf"
+            crossorigin=""
     />
     <script
-      src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
-      integrity="sha384-okbbMvvx/qfQkmiQKfd5VifbKZ/W8p1qIsWvE1ROPUfHWsDcC8/BnHohF7vPg2T6"
-      crossorigin=""
+            src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+            integrity="sha384-okbbMvvx/qfQkmiQKfd5VifbKZ/W8p1qIsWvE1ROPUfHWsDcC8/BnHohF7vPg2T6"
+            crossorigin=""
     ></script>
     <style type="text/css">
-      body {
-        margin: 0;
-        padding: 0;
-      }
-      html,
-      body,
-      #map {
-        background-color: white;
-        width: 100%;
-        height: 100%;
-      }
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body,
+        #map {
+            background-color: #232321 !important;
+            width: 100%;
+            height: 100%;
+        }
     </style>
-  </head>
-  <body>
-    <div id="map"></div>
-    <script>
-      var map = L.map('map', {
-            center: [-0.09279131502241474, 0.13131572823259163],
-            zoom: 17,
-            minZoom: 11,
-            maxZoom: 17,
-        });
-      L.control.attribution({ prefix: false }).addTo(map);
-      var tilesource_layer = L.tileLayer("./tiles/{z}/{x}/{y}.png", {
+</head>
+<body>
+<div id="map"></div>
+<script>
+    var map = L.map('map', {
+        center: [-0.0848593222900214, 0.1529786013091339],
         minZoom: 12,
-        maxZoom: 16,
-        tms: false,
-        attribution: "Created by QGIS",
-      }).addTo(map);
-      var geojsonLayer = L.geoJSON(null, {
-        style: function (feature) {
-          return {
-            color: "blue",
-            weight: 0.9,
-            fillColor: "blue",
-            fillOpacity: 0.3,
-          };
-        },
-        onEachFeature: function (feature, layer) {
-          layer.on("click", function (e) {
-            // Mostrar la propiedad "name" cuando se hace clic en un elemento
-            alert("Name: " + feature.properties.name);
-          });
-        },
-      }).addTo(map);
-
-      // Cargar datos GeoJSON
-      var geojsonLayer = L.geoJSON(null, {
-    style: function(feature) {
-        return {
-            color: 'blue',
-            fillColor: 'blue',
-            fillOpacity: 0.5
-        };
-    }
-}).addTo(map);
-
-// Cargar datos GeoJSON
-fetch('./warehouse_test.geojson')
-    .then(function(response) {
-        return response.json();
-    })
-    .then(function(data) {
-        geojsonLayer.addData(data);
+        maxZoom: 15
     });
 
+    // Definir los límites de la imagen SVG
+    var imageBounds = [
+        [-0.1697184584344759, 0.0],
+        [0.0, 0.3059572026182678]
+    ];
 
-        // Add base layers
-        L.control.layers(basemaps, overlaymaps, {collapsed: false}).addTo(map);
+    // Agregar la imagen SVG como una capa utilizando L.imageOverlay
+    L.imageOverlay('map.svg', imageBounds).addTo(map);
 
-        // Fit to overlay bounds (SW and NE points with (lat, lon))
-        map.fitBounds([[-0.18558263004482947, 0.26263145646518327], [0.0, 0.0]]);
-    </script>
-  </body>
+    var geojsonLayer = L.geoJSON(null, {
+        style: function (feature) {
+            return {
+                color: "blue",
+                weight: 0.9,
+                fillColor: "blue",
+                fillOpacity: 0.3,
+            };
+        },
+        onEachFeature: function (feature, layer) {
+            layer.on("click", function (e) {
+                // Mostrar la propiedad "name" cuando se hace clic en un elemento
+                alert("Name: " + feature.properties.name);
+            });
+        },
+    }).addTo(map);
+
+    // Cargar datos GeoJSON
+    fetch('./test.geojson')
+        .then(function (response) {
+            return response.json();
+        })
+        .then(function (data) {
+            geojsonLayer.addData(data);
+        });
+
+    map.fitBounds([
+        [-0.21219955130679427, 0.3461298621240928],
+        [0.0, 0.0],
+    ]);
+</script>
+</body>
 </html>

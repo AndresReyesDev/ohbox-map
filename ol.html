@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>Mapa de Bodegas</title>
+    <!-- OpenLayers -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.3.0/ol.css">
+    <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Lightbox -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/5.3.0/ekko-lightbox.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/5.3.0/ekko-lightbox.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .carousel-item img {
+            max-height: 200px;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+    var map = new ol.Map({
+        target: 'map',
+        layers: [
+            new ol.layer.Tile({
+                source: new ol.source.OSM()
+            })
+        ],
+        view: new ol.View({
+            center: ol.proj.fromLonLat([0.1730649310620464, -0.10609977565339714]),
+            zoom: 13,
+            minZoom: 13,
+            maxZoom: 15
+        })
+    });
+
+    var mapBounds = ol.proj.transformExtent([0.0, -0.21219955130679427, 0.3461298621240928, 0.0], 'EPSG:4326', 'EPSG:3857');
+
+    var overlay = new ol.layer.Image({
+        source: new ol.source.ImageStatic({
+            url: 'map.svg',
+            projection: map.getView().getProjection(),
+            imageExtent: mapBounds
+        })
+    });
+    map.addLayer(overlay);
+
+    var geojsonLayer = new ol.layer.Vector({
+        source: new ol.source.Vector(),
+        style: function (feature) {
+            let style = new ol.style.Style({
+                fill: new ol.style.Fill({
+                    color: feature.get('is_available') ? 'transparent' : 'rgba(255, 0, 0, 0.5)'
+                }),
+                stroke: new ol.style.Stroke({
+                    color: 'transparent'
+                })
+            });
+            return style;
+        }
+    });
+    map.addLayer(geojsonLayer);
+
+    // Consumir la API de Laravel para obtener la lista de bodegas y sus polígonos
+    fetch("https://ohbox-backend.test/api/warehouses/")
+        .then(function (response) {
+            return response.json();
+        })
+        .then(function (data) {
+            data.forEach(function (warehouse) {
+                var polygonCoords = warehouse.polygon[0][0].map(function (coord) {
+                    return ol.proj.fromLonLat(coord);
+                });
+
+                var feature = new ol.Feature({
+                    geometry: new ol.geom.Polygon([polygonCoords]),
+                    uuid: warehouse.uuid,
+                    name: warehouse.name,
+                    is_available: warehouse.is_available
+                });
+                geojsonLayer.getSource().addFeature(feature);
+
+                var popup = new ol.Overlay.Popup();
+                map.addOverlay(popup);
+
+                feature.on('click', function () {
+                    fetch(`https://ohbox-backend.test/api/warehouses/${warehouse.uuid}`)
+                        .then(function (response) {
+                            return response.json();
+                        })
+                        .then(function (data) {
+                            console.log(data);
+                            let cardContent = `
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">${data.name}</h5>
+                                    </div>
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item"><strong>Ubicación:</strong> ${data.location}</li>
+                                        <li class="list-group-item"><strong>Descripción:</strong> ${data.description}</li>
+                                        <li class="list-group-item"><strong>Tamaño:</strong> ${data.size} m²</li>
+                                        <li class="list-group-item"><strong>Color:</strong> ${data.color}</li>
+                                        <li class="list-group-item"><strong>Disponible:</strong> ${data.is_available ? "Sí" : "No"}</li>
+                                        <li class="list-group-item"><strong>Valor:</strong> ${data.price} UF mensual</li>
+                                    </ul>
+                                    <div class="card-body">
+                                        <div id="carouselImages" class="carousel slide" data-bs-ride="carousel" data-bs-interval="2000">
+                                            <div class="carousel-inner">
+                                                ${data.images.map((image, index) => `
+                                                    <div class="carousel-item ${index === 0 ? 'active' : ''}">
+                                                        <a href="${image}" data-bs-toggle="lightbox" data-bs-gallery="gallery-${data.uuid}" data-remote="${image}">
+                                                            <img src="${image}" class="d-block mx-auto" alt="">
+                                                        </a>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                            <button class="carousel-control-prev" type="button" data-bs-target="#carouselImages" data-bs-slide="prev">
+                                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                                <span class="visually-hidden">Anterior</span>
+                                            </button>
+                                            <button class="carousel-control-next" type="button" data-bs-target="#carouselImages" data-bs-slide="next">
+                                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                                <span class="visually-hidden">Siguiente</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="d-grid gap-2">
+                                            <a href="https://ohbox-backend.test/api/warehouses/${data.uuid}" class="btn btn-block btn-sm ${data.is_available ? 'btn-primary text-white' : 'btn-danger disabled'} text-white">
+                                                ${data.is_available ? 'Contratar' : 'No disponible'}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+
+                            popup.show(feature.getGeometry().getCoordinates(), cardContent);
+
+                            // Inicializar el carrusel y el lightbox
+                            var carouselElement = document.getElementById("carouselImages");
+                            var carousel = new bootstrap.Carousel(carouselElement, {
+                                interval: 2000,
+                            });
+                            $(document).on("click", `[data-bs-gallery="gallery-${data.uuid}"]`, function (event) {
+                                event.preventDefault();
+                                $(this).ekkoLightbox();
+                            });
+                        });
+                });
+            });
+        });
+</script>
+</body>
+</html>
